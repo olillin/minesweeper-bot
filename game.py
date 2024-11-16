@@ -1,5 +1,6 @@
 from enum import IntEnum
 import random
+from typing import cast
 
 
 class Cell(IntEnum):
@@ -22,6 +23,7 @@ class State(IntEnum):
     PLAYING = 1
     LOST = 2
     WON = 3
+
 
 class MinesweeperGame:
     # Configuration
@@ -71,7 +73,7 @@ class MinesweeperGame:
         if not self.in_bounds(x, y):
             raise ValueError("Illegal cell coordinate")
 
-    def get_cell(self, x: int, y: int) -> int:
+    def get_cell(self, x: int, y: int) -> Cell:
         self.assert_in_bounds(x, y)
         return self.cells[y * self.width + x]
 
@@ -79,10 +81,10 @@ class MinesweeperGame:
         self.assert_in_bounds(x, y)
         self.cells[y * self.width + x] = cell
 
-    def get_mine(self, x: int, y: int) -> int:
+    def is_mine(self, x: int, y: int) -> int:
         self.assert_in_bounds(x, y)
         return self.mines[y * self.width + x]
-    
+
     def _set_mine(self, x: int, y: int, mine: bool):
         self.assert_in_bounds(x, y)
         self.mines[y * self.width + x] = mine
@@ -107,12 +109,12 @@ class MinesweeperGame:
 
         return coords
 
-    def get_neighbours(self, x: int, y: int) -> list[int]:
+    def get_neighbours(self, x: int, y: int) -> list[Cell]:
         return [self.get_cell(*coord) for coord in self.get_neighbour_coordinates(x, y)]
 
     def get_mine_neighbour_count(self, x: int, y: int) -> int:
         return [
-            self.get_mine(*coord) for coord in self.get_neighbour_coordinates(x, y)
+            self.is_mine(*coord) for coord in self.get_neighbour_coordinates(x, y)
         ].count(True)
 
     def count_mines(self) -> int:
@@ -123,22 +125,84 @@ class MinesweeperGame:
             x = random.randint(0, self.width - 1)
             y = random.randint(0, self.height - 1)
 
-            if self.get_mine(x, y):
+            if self.is_mine(x, y):
                 continue
             if x == start_x and y == start_y:
                 continue
 
-            self.mines._set_mine()
-        
+            self._set_mine(x, y, True)
+
         self.state = State.PLAYING
 
-    def click(self, x: int, y: int):
+    def dig(self, x: int, y: int) -> bool:
+        """Dig a cell and returns whether anything changed"""
+        cell = self.get_cell(x, y)
+        if cell != Cell.UNDISCOVERED:
+            # Easy digging
+            if cell >= 1 and cell <= 8:
+                neighbours = self.get_neighbours(x, y)
+                flag_neighbours = neighbours.count(Cell.FLAG)
+
+                mine_count = cell
+                if flag_neighbours == mine_count:
+                    for nx, ny in self.get_neighbour_coordinates(x, y):
+                        if self.get_cell(nx, ny) == Cell.UNDISCOVERED:
+                            self.dig(nx, ny)
+            return False
+
+        if self.is_mine(x, y):
+            self.lose()
+        else:
+            self.show(x, y)
+
+        if self.has_won():
+            self.win()
+
+        return True
+
+    def show(self, x: int, y: int) -> Cell:
+        """Shows a cell and returns its state"""
         self.assert_in_bounds(x, y)
 
-        if self.get_mine(x, y):
-            
-            pass # lose
+        if self.is_mine(x, y):
+            cell = Cell.EXPOSED_MINE
+        else:
+            mine_count = self.get_mine_neighbour_count(x, y)
+            cell = cast(Cell, mine_count)
+        self._set_cell(x, y, cell)
+        return cell
 
+    def flag(self, x: int, y: int) -> bool:
+        """Attempt to place or remove a flag and return if anything changed"""
+        cell = self.get_cell(x, y)
+        if cell == Cell.UNDISCOVERED:
+            self._set_cell(x, y, Cell.FLAG)
+        elif cell == Cell.FLAG:
+            self._set_cell(x, y, Cell.UNDISCOVERED)
+        else:
+            # Easy flagging
+            if cell >= 1 and cell <= 8:
+                neighbours = self.get_neighbours(x, y)
+                undiscovered_neighbours = neighbours.count(Cell.UNDISCOVERED)
+                flag_neighbours = neighbours.count(Cell.FLAG)
+
+                mine_count = cell
+                if flag_neighbours + undiscovered_neighbours == mine_count:
+                    for nx, ny in self.get_neighbour_coordinates(x, y):
+                        if self.get_cell(nx, ny) == Cell.UNDISCOVERED:
+                            self.flag(nx, ny)
+                    return True
+            return False
+        return True
+
+    def has_won(self) -> bool:
+        return self.cells.count(Cell.UNDISCOVERED) == self.count_mines()
+
+    def win(self):
+        self.state = State.WON
+
+    def lose(self):
+        self.state = State.LOST
 
 
 class Difficulty(IntEnum):
