@@ -123,6 +123,9 @@ class MinesweeperGame:
             self.is_mine(*coord) for coord in self.get_neighbour_coordinates(x, y)
         ].count(True)
 
+    def get_all_coordinates(self) -> list[tuple[int, int]]:
+        return [(x, y) for y in range(self.height) for x in range(self.width)]
+
     def count_mines(self) -> int:
         return self.mines.count(True)
 
