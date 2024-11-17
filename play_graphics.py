@@ -29,14 +29,20 @@ def main():
             if game.state == State.LOST or game.state == State.WON:
                 game = new_game(DIFFICULTY)
                 screen.game = game
-                changed = True
+                screen.reset_timer()
             elif right_click:
-                changed = game.flag(click_x, click_y)
+                game.flag(click_x, click_y)
             else:
-                changed = game.dig(click_x, click_y)
+                game.dig(click_x, click_y)
 
-            if changed:
-                screen.draw()
+            if game.state == State.PLAYING:
+                screen.start_timer()
+
+        # End game
+        if game.state == State.LOST or game.state == State.WON:
+            screen.end_game()
+
+        screen.draw()
 
         clock.tick(60)
 
