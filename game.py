@@ -210,7 +210,12 @@ class MinesweeperGame:
 
     def flag(self, x: int, y: int) -> bool:
         """Attempt to place or remove a flag and return if anything changed"""
+
         cell = self.get_cell(x, y)
+
+        if self.state == State.UNGENERATED:
+            return False
+
         if cell == Cell.UNDISCOVERED:
             self._set_cell(x, y, Cell.FLAG)
         elif cell == Cell.FLAG:
