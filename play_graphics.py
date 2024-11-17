@@ -14,7 +14,7 @@ def main():
     pygame.init()
     clock = pygame.time.Clock()
     pygame.display.set_caption("Minesweeper: Play")
-    screen = MinesweeperScreen(game)
+    screen = MinesweeperScreen(game, cell_size=60)
 
     # Main loop
     screen.draw()
