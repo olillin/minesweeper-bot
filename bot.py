@@ -69,6 +69,15 @@ def can_easy_flag(game: MinesweeperGame, x: int, y: int) -> bool:
         and undiscovered_neighbours > 0
     )
 
+def get_chained_dig(game: MinesweeperGame, x: int, y: int) -> list[tuple[int, int]]:
+    cell = game.get_cell(x, y)
+    if cell < Cell.ONE or cell > Cell.EIGHT:
+        return []
+
+    neighbour_coords = game.get_neighbour_coordinates(x, y)
+    for nx, ny in neighbour_coords:
+        if 
+
 
 def make_next_move(
     game: MinesweeperGame, previous_x: int, previous_y: int
