@@ -5,7 +5,10 @@ from screen import MinesweeperScreen
 
 DIFFICULTY = Difficulty.EASY
 
-def all_coordinates_spiral(game: MinesweeperGame, previous_x: int, previous_y: int) -> list[tuple[int, int]]:
+
+def all_coordinates_spiral(
+    game: MinesweeperGame, previous_x: int, previous_y: int
+) -> list[tuple[int, int]]:
     step = 1
     coords: list[tuple[int, int]] = []
     in_bounds = True
@@ -22,39 +25,65 @@ def all_coordinates_spiral(game: MinesweeperGame, previous_x: int, previous_y: i
     while in_bounds:
         in_bounds = False
         for _ in range(step):
-            add_coord(pointer_x, pointer_y+1)
+            add_coord(pointer_x, pointer_y + 1)
         for _ in range(step):
-            add_coord(pointer_x+1, pointer_y)
+            add_coord(pointer_x + 1, pointer_y)
         step += 1
         for _ in range(step):
-            add_coord(pointer_x, pointer_y-1)
+            add_coord(pointer_x, pointer_y - 1)
         for _ in range(step):
-            add_coord(pointer_x-1, pointer_y)
+            add_coord(pointer_x - 1, pointer_y)
         step += 1
 
     return coords
 
-def make_next_move(game: MinesweeperGame, previous_x: int, previous_y: int) -> tuple[int, int]:
+
+def can_easy_dig(game: MinesweeperGame, x: int, y: int) -> bool:
+    cell = game.get_cell(x, y)
+    neighbours = game.get_neighbours(x, y)
+    undiscovered_neighbours = neighbours.count(Cell.UNDISCOVERED)
+    flag_neighbours = neighbours.count(Cell.FLAG)
+
+    mine_count = int(cell)
+
+    return (
+        cell >= Cell.ONE
+        and cell <= Cell.EIGHT
+        and flag_neighbours == mine_count
+        and undiscovered_neighbours > 0
+    )
+
+
+def can_easy_flag(game: MinesweeperGame, x: int, y: int) -> bool:
+    cell = game.get_cell(x, y)
+    neighbours = game.get_neighbours(x, y)
+    undiscovered_neighbours = neighbours.count(Cell.UNDISCOVERED)
+    flag_neighbours = neighbours.count(Cell.FLAG)
+
+    mine_count = int(cell)
+
+    return (
+        cell >= Cell.ONE
+        and cell <= Cell.EIGHT
+        and flag_neighbours + undiscovered_neighbours == mine_count
+        and undiscovered_neighbours > 0
+    )
+
+
+def make_next_move(
+    game: MinesweeperGame, previous_x: int, previous_y: int
+) -> tuple[int, int]:
     coords = all_coordinates_spiral(game, previous_x, previous_y)
     for x, y in coords:
-        cell = game.get_cell(x, y)
-        if cell >= Cell.ONE and cell <= Cell.EIGHT:
-            neighbours = game.get_neighbours(x, y)
-            undiscovered_neighbours = neighbours.count(Cell.UNDISCOVERED)
-            flag_neighbours = neighbours.count(Cell.FLAG)
-
-            mine_count = int(cell)
-            if flag_neighbours == mine_count and undiscovered_neighbours > 0:
-                game.dig(x, y)
-                return x, y
-            elif (
-                flag_neighbours + undiscovered_neighbours == mine_count
-                and undiscovered_neighbours > 0
-            ):
-                game.flag(x, y)
-                return x, y
+        if can_easy_dig(game, x, y):
+            game.dig(x, y)
+            return x, y
+        if can_easy_flag(game, x, y):
+            game.flag(x, y)
+            return x, y
 
     return previous_x, previous_y
+
 
 def main():
     # Start game
@@ -89,7 +118,6 @@ def main():
                 screen.game = game
                 screen.reset_timer()
 
-
         # End game
         if game.state == State.LOST or game.state == State.WON:
             screen.end_game()
@@ -97,6 +125,7 @@ def main():
         screen.draw()
 
         clock.tick(10)
+
 
 if __name__ == "__main__":
     main()
