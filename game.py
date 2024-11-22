@@ -135,6 +135,14 @@ class MinesweeperGame:
     def get_remaining_mines(self) -> int:
         return self.mine_count - self.count_flags()
 
+    def get_unflagged_mine_neighbour_count(self, x: int, y: int) -> int:
+        return self.get_mine_neighbour_count(x, y) - self.get_neighbours(x, y).count(
+            Cell.FLAG
+        )
+
+    def count_neighbours(self, x: int, y: int, value: Cell):
+        return self.get_neighbours(x, y).count(value)
+
     def generate(self, start_x: int, start_y: int):
         while self.count_mines() < self.mine_count:
             x = random.randint(0, self.width - 1)
@@ -158,9 +166,8 @@ class MinesweeperGame:
         if cell != Cell.UNDISCOVERED:
             # Easy digging
             if cell >= Cell.ONE and cell <= Cell.EIGHT:
-                neighbours = self.get_neighbours(x, y)
-                undiscovered_neighbours = neighbours.count(Cell.UNDISCOVERED)
-                flag_neighbours = neighbours.count(Cell.FLAG)
+                undiscovered_neighbours = self.count_neighbours(x, y, Cell.UNDISCOVERED)
+                flag_neighbours = self.count_neighbours(x, y, Cell.FLAG)
 
                 mine_count = int(cell)
                 if flag_neighbours == mine_count and undiscovered_neighbours > 0:
@@ -188,7 +195,8 @@ class MinesweeperGame:
             done = True
             for x in range(self.width):
                 for y in range(self.height):
-                    if self.get_cell(x, y) == Cell.UNDISCOVERED:
+                    cell = self.get_cell(x, y)
+                    if cell == Cell.UNDISCOVERED or cell == Cell.FLAG:
                         neighbours = self.get_neighbour_coordinates(x, y)
                         for nx, ny in neighbours:
                             if self.get_cell(nx, ny) == Cell.ZERO:

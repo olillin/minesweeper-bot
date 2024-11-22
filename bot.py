@@ -3,7 +3,7 @@ import pygame
 from game import Cell, Difficulty, MinesweeperGame, State, new_game
 from screen import MinesweeperScreen
 
-DIFFICULTY = Difficulty.EASY
+DIFFICULTY = Difficulty.HARD
 
 
 def all_coordinates_spiral(
@@ -69,14 +69,39 @@ def can_easy_flag(game: MinesweeperGame, x: int, y: int) -> bool:
         and undiscovered_neighbours > 0
     )
 
-def get_chained_dig(game: MinesweeperGame, x: int, y: int) -> list[tuple[int, int]]:
+
+def get_chained_flag(game: MinesweeperGame, x: int, y: int) -> tuple[int, int] | None:
     cell = game.get_cell(x, y)
     if cell < Cell.ONE or cell > Cell.EIGHT:
-        return []
+        return
 
     neighbour_coords = game.get_neighbour_coordinates(x, y)
+    unflagged = game.get_unflagged_mine_neighbour_count(x, y)
     for nx, ny in neighbour_coords:
-        if 
+        cell1 = game.get_cell(nx, ny)
+        if cell1 >= Cell.ONE and cell1 <= Cell.EIGHT:
+            continue
+
+        delta1 = [
+            coord
+            for coord in set(game.get_neighbour_coordinates(nx, ny)).difference(
+                game.get_neighbour_coordinates(x, y)
+            )
+            if game.get_cell(*coord) == Cell.UNDISCOVERED
+        ]
+        delta2 = [
+            coord
+            for coord in set(game.get_neighbour_coordinates(x, y)).difference(
+                game.get_neighbour_coordinates(nx, ny)
+            )
+            if game.get_cell(*coord) == Cell.UNDISCOVERED
+        ]
+
+        if len(delta2) > 0 and len(delta1) > 0 and len(delta1) == unflagged:
+            print(
+                f"Chained debug: ({x}, {y}), n({nx}, {ny}), unflagged {unflagged}, delta1{delta1}"
+            )
+            return delta1[0]
 
 
 def make_next_move(
@@ -90,6 +115,10 @@ def make_next_move(
         if can_easy_flag(game, x, y):
             game.flag(x, y)
             return x, y
+        chained = get_chained_flag(game, x, y)
+        if chained is not None:
+            game.flag(*chained)
+            return chained
 
     return previous_x, previous_y
 
@@ -102,7 +131,7 @@ def main():
     pygame.init()
     clock = pygame.time.Clock()
     pygame.display.set_caption("Minesweeper: Bot")
-    screen = MinesweeperScreen(game, cell_size=60)
+    screen = MinesweeperScreen(game, cell_size=30)
 
     # Main loop
     x, y = 0, 0
