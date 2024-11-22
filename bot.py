@@ -79,7 +79,7 @@ def get_chained_flag(game: MinesweeperGame, x: int, y: int) -> tuple[int, int] |
     unflagged = game.get_unflagged_mine_neighbour_count(x, y)
     for nx, ny in neighbour_coords:
         cell1 = game.get_cell(nx, ny)
-        if cell1 >= Cell.ONE and cell1 <= Cell.EIGHT:
+        if cell1 < Cell.ONE or cell1 > Cell.EIGHT:
             continue
 
         delta1 = [
@@ -97,7 +97,7 @@ def get_chained_flag(game: MinesweeperGame, x: int, y: int) -> tuple[int, int] |
             if game.get_cell(*coord) == Cell.UNDISCOVERED
         ]
 
-        if len(delta2) > 0 and len(delta1) > 0 and len(delta1) == unflagged:
+        if len(delta2) == 0 and len(delta1) == 1 and unflagged == 1:
             print(
                 f"Chained debug: ({x}, {y}), n({nx}, {ny}), unflagged {unflagged}, delta1{delta1}"
             )
